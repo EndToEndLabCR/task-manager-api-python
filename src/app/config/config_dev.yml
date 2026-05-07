@@ -7,7 +7,7 @@ postgres:
   password: !ENV ${POSTGRES_PASSWORD}
   host: "localhost"
   port: 5432
-  dbname: "templatedb"
+  dbname: "taskflow_db"
   echo: true  # SQLAlchemy echo logs
   pool_size: 10
   max_over_flow: 10
