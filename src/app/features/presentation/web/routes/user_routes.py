@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, status
 from fastapi.params import Depends
 
-from src.app.features.application.dtos.user_dto import UserResponse, UserCreateRequest
+from src.app.features.application.dtos.user_dto import UserResponse, UserCreateRequest, DeleteResponse
 from src.app.features.application.exceptions.user_exception import UserDoesNotExistException, UserAlreadyExistsException
 from src.app.features.application.services.user_service import UserService
 from src.app.features.presentation.web.dependencies import get_user_service
@@ -58,3 +58,15 @@ async def create_user(payload: UserCreateRequest, user_service: UserService = De
 
     except Exception as e:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
+
+
+@router.delete("/{user_id}", response_model=DeleteResponse, status_code=status.HTTP_200_OK)
+async def delete_user(user_id: UUID, user_service: UserService = Depends(get_user_service)) -> DeleteResponse:
+    try:
+        return await user_service.delete_user(str(user_id))
+
+    except UserDoesNotExistException as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

@@ -111,4 +111,38 @@ class UserRepositoryImpl(UserRepository):
         pass
 
     async def delete(self, entity_id: ID) -> bool:
+        try:
+            log.info(f"start delete user by id: {entity_id.value}")
+            user_model: Optional[UserModel] = await self.db_session.get(UserModel, entity_id.value)
+
+            if user_model is None:
+                log.info(f"user by id {entity_id.value} not found for deletion")
+                return False
+
+            log.info(f"completed delete user by id {entity_id.value}")
+
+            await self.db_session.delete(user_model)
+            await self.db_session.commit()
+
+            return True
+
+        except sqlalchemy.exc.OperationalError as db_error:
+            log.error(f"Database connection error while deleting user by id: {entity_id.value}. Error: {str(db_error)}")
+            raise DatabaseConnectionError("Failed to connect to the database.") from db_error
+
+        except Exception as e:
+            await self.db_session.rollback()
+            log.error(f"Error deleting user by id: {entity_id.value} Exceptions: {str(e)}")
+            raise
+            return True
+
+        except sqlalchemy.exc.OperationalError as db_error:
+            log.error(
+                f"Database connection error while deleting user by id: {entity_id.value}. Error: {str(db_error)}")
+            raise DatabaseConnectionError("Failed to connect to the database.") from db_error
+
+        except Exception as e:
+            await self.db_session.rollback()
+            log.error(f"Error deleting user by id: {entity_id.value}. Error: {str(e)}")
+            raise
         pass

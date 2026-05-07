@@ -23,3 +23,11 @@ class UserCreateRequest(BaseModel):
     last_name: str
     email: EmailStr
     password: str
+
+class DeleteResponse(BaseModel):
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True
+    )
+
+    message: str
