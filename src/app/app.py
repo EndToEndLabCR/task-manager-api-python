@@ -5,6 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.app.config.app_config import AppConfig
 
 from src.app.features.presentation.web.routes.user_routes import router as user_router
+from src.app.features.presentation.web.routes.password_reset_routes import router as password_reset_router
+from src.app.features.presentation.web.routes.email_verification_routes import router as email_verification_router
 
 ENV = os.getenv("APP_ENV", "local")
 
@@ -43,4 +45,6 @@ def get_health_check():
     return "Ok"
 
 # TODO validate best practices for endpoint naming conventions
-fastApiApp.include_router(user_router, prefix="/v1/user", tags=["Users"])
+fastApiApp.include_router(user_router, prefix="/api/v1/auth", tags=["Auth"])
+fastApiApp.include_router(password_reset_router, prefix="/api/v1/auth/reset-password", tags=["Password Reset"])
+fastApiApp.include_router(email_verification_router, prefix="/api/v1/auth", tags=["Email Verification"])
