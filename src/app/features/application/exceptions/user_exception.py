@@ -6,10 +6,19 @@ class UserDoesNotExistException(Exception):
         self.message = f"User with ID {self.user_id} does not exist."
         super().__init__(self.message)
 
+
 class UserAlreadyExistsException(Exception):
     """Exception raised when a user already exists (duplicate)."""
 
     def __init__(self, email: str):
         self.email = email
         self.message = f"User with email {self.email} already exists."
+        super().__init__(self.message)
+
+
+class InvalidCredentialsException(Exception):
+    """Exception raised when user credentials are invalid."""
+
+    def __init__(self, message: str = "Invalid credentials"):
+        self.message = message
         super().__init__(self.message)
