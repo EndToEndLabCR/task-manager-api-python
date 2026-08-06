@@ -1,0 +1,6 @@
+"""Root conftest for test fixtures shared across all test modules."""
+import sys
+import os
+
+# Ensure the project root is in the path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
