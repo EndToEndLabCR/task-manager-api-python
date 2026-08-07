@@ -1,37 +1,34 @@
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from typing import Optional, List
 
 from src.app.features.domain.entities.user_entity import UserEntity
 from src.app.features.domain.value_objects.email import Email
-from src.shared.domain.repositories.base_repository import BaseRepository, ID, T
 from src.shared.domain.value_objects.entity_id import EntityId
 
 
-class UserRepository(BaseRepository[UserEntity, EntityId]):
-
+class UserRepository(ABC):
+    """Contract for user persistence operations."""
 
     @abstractmethod
-    async def find_by_email(self, email: Email) -> Optional[UserEntity]:
-        """
-        Find a user by their email address.
-
-        Args:
-            email (Email): The email address to search for.
-
-        Returns:
-            Optional[UserEntity]: The user entity if found, otherwise None.
-        """
+    async def save(self, entity: UserEntity) -> UserEntity:
         pass
 
     @abstractmethod
-    async def find_by_name(self, record: str) -> Optional[UserEntity]:
-        """
-        Find a user by their name.
+    async def find_by_id(self, entity_id: EntityId) -> Optional[UserEntity]:
+        pass
 
-        Args:
-            record (str): The name of the user to search for.
+    @abstractmethod
+    async def find_by_email(self, email: Email) -> Optional[UserEntity]:
+        pass
 
-        Returns:
-            Optional[UserEntity]: The user entity if found, otherwise None.
-        """
+    @abstractmethod
+    async def find_by_username(self, username: str) -> Optional[UserEntity]:
+        pass
+
+    @abstractmethod
+    async def update(self, entity: UserEntity) -> Optional[UserEntity]:
+        pass
+
+    @abstractmethod
+    async def delete(self, entity_id: EntityId) -> bool:
         pass

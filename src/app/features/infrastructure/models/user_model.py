@@ -1,17 +1,14 @@
-from sqlalchemy import Column, String
+from sqlalchemy import Column, String, JSON, Boolean
 from src.shared.infrastructure.models.base_model import BaseModel
 
 
 class UserModel(BaseModel):
-    """
-    SQLAlchemy model for the 'users' table.
-    Inherits common fields from BaseModel.
-    """
+    """SQLAlchemy model for the 'users' table."""
 
     __tablename__ = 'users'
 
-    # Additional fields specific to the UserModel can be defined here
     email = Column(String(255), unique=True, nullable=False, index=True)
-    first_name = Column(String(50), nullable=False)
-    last_name = Column(String(50), nullable=False)
+    username = Column(String(50), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
+    is_verified = Column(Boolean, nullable=False, default=False, server_default="false")
+    preferences = Column(JSON, nullable=True)

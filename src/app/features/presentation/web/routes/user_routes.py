@@ -1,32 +1,51 @@
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status
-from fastapi.params import Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 
-from src.app.features.application.dtos.user_dto import UserResponse, UserCreateRequest, DeleteResponse
-from src.app.features.application.exceptions.user_exception import UserDoesNotExistException, UserAlreadyExistsException
-from src.app.features.application.services.user_service import UserService
-from src.app.features.presentation.web.dependencies import get_user_service
+from src.app.features.application.dtos.user_dto import (
+    UserResponse,
+    UserCreateRequest,
+    DeleteResponse,
+    LoginRequest,
+    LoginResponse,
+    RefreshTokenRequest,
+)
+from src.app.features.application.exceptions.user_exception import (
+    UserDoesNotExistException,
+    UserAlreadyExistsException,
+    InvalidCredentialsException,
+)
+from src.app.features.application.use_cases.create_user import CreateUserUseCase
+from src.app.features.application.use_cases.delete_user import DeleteUserUseCase
+from src.app.features.application.use_cases.get_user_by_id import GetUserByIdUseCase
+from src.app.features.application.use_cases.login_user import LoginUseCase, TooManyLoginAttemptsException
+from src.app.features.application.use_cases.refresh_token import RefreshTokenUseCase
+from src.app.features.presentation.web.dependencies import (
+    get_register_user_use_case,
+    get_login_use_case,
+    get_delete_user_use_case,
+    get_user_by_id_use_case,
+    get_refresh_token_use_case,
+    get_current_user,
+)
 
 router = APIRouter()
 
 
+@router.get("/me", response_model=UserResponse)
+async def get_me(
+    current_user: UserResponse = Depends(get_current_user),
+) -> UserResponse:
+    return current_user
+
+
 @router.get("/{user_id}", response_model=UserResponse)
-async def get_user_by_id(user_id: UUID, user_service: UserService = Depends(get_user_service)) -> UserResponse:
-    # """
-    # Get a user by their ID.
-    #
-    # Args:
-    #     user_id (UUID): The user's unique identifier.
-    #
-    # Returns:
-    #     UserResponse: The user's details.
-    # """
-
+async def get_user_by_id(
+    user_id: UUID,
+    use_case: GetUserByIdUseCase = Depends(get_user_by_id_use_case),
+) -> UserResponse:
     try:
-        user_result = await user_service.get_user_by_id(str(user_id))
-
-        return user_result
+        return await use_case.execute(str(user_id))
 
     except UserDoesNotExistException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
@@ -35,20 +54,13 @@ async def get_user_by_id(user_id: UUID, user_service: UserService = Depends(get_
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-async def create_user(payload: UserCreateRequest, user_service: UserService = Depends(get_user_service)) -> UserResponse:
-    # """
-    # Create a new user.
-    #
-    # Returns:
-    #     Returns the created user details including the generated ID.
-    #     Validates email uniqueness and securely hashes the password.
-    # """
-
+async def create_user(
+    payload: UserCreateRequest,
+    use_case: CreateUserUseCase = Depends(get_register_user_use_case),
+) -> UserResponse:
     try:
-        user_result = await user_service.create_user(payload)
-        return user_result
+        return await use_case.execute(payload)
 
     except UserAlreadyExistsException as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
@@ -57,13 +69,46 @@ async def create_user(payload: UserCreateRequest, user_service: UserService = De
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
     except Exception as e:
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
+
+
+@router.post("/login", response_model=LoginResponse)
+async def login(
+    payload: LoginRequest,
+    use_case: LoginUseCase = Depends(get_login_use_case),
+) -> LoginResponse:
+    try:
+        return await use_case.execute(payload.email, payload.password)
+
+    except TooManyLoginAttemptsException as e:
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(e))
+
+    except InvalidCredentialsException as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post("/refresh-token", response_model=LoginResponse)
+async def refresh_token(
+    payload: RefreshTokenRequest,
+    use_case: RefreshTokenUseCase = Depends(get_refresh_token_use_case),
+) -> LoginResponse:
+    try:
+        return await use_case.execute(payload.refresh_token)
+
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
 
 
 @router.delete("/{user_id}", response_model=DeleteResponse, status_code=status.HTTP_200_OK)
-async def delete_user(user_id: UUID, user_service: UserService = Depends(get_user_service)) -> DeleteResponse:
+async def delete_user(
+    user_id: UUID,
+    use_case: DeleteUserUseCase = Depends(get_delete_user_use_case),
+) -> DeleteResponse:
     try:
-        return await user_service.delete_user(str(user_id))
+        return await use_case.execute(str(user_id))
 
     except UserDoesNotExistException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
